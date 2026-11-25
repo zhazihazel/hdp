@@ -227,6 +227,96 @@ footer p { color: #85899b; font-size: 13px; }
     .detail-image-wrap { min-height: 260px; }
     .detail-image-wrap img { height: 280px; }
 }
+/* ОТЗЫВЫ И КОММЕНТАРИИ */
+.comments-section {
+    margin-top: 55px;
+    padding-top: 35px;
+    border-top: 1px solid var(--line);
+    max-width: 850px;
+}
+
+.comments-section h2 {
+    font-size: 27px;
+    margin-bottom: 10px;
+}
+
+.comments-subtitle {
+    color: var(--muted);
+    margin-bottom: 25px;
+}
+
+.comment-form {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.comment-form input,
+.comment-form textarea {
+    width: 100%;
+    background: var(--panel);
+    color: white;
+    border: 1px solid #303444;
+    border-radius: 10px;
+    padding: 14px;
+    outline: none;
+    font: inherit;
+}
+
+.comment-form textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.comment-form input:focus,
+.comment-form textarea:focus {
+    border-color: var(--purple);
+}
+
+.comment-submit {
+    justify-self: start;
+    background: var(--purple);
+    color: white;
+    border: 0;
+    border-radius: 10px;
+    padding: 13px 20px;
+    font-weight: bold;
+}
+
+.comment-list {
+    display: grid;
+    gap: 14px;
+}
+
+.comment-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    padding: 18px;
+}
+
+.comment-card strong {
+    display: block;
+    margin-bottom: 7px;
+}
+
+.comment-card p {
+    color: var(--muted);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.comment-date {
+    color: #777f94;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.comment-empty {
+    color: var(--muted);
+    padding: 15px 0;
+}
 </style>
 </head>
 <body>
@@ -286,6 +376,35 @@ footer p { color: #85899b; font-size: 13px; }
             <button class="detail-add" id="detail-add">Добавить в корзину</button>
         </div>
     </div>
+    <section class="comments-section">
+    <h2>Отзывы и комментарии</h2>
+    <p class="comments-subtitle">
+        Поделитесь впечатлением об этом товаре.
+    </p>
+
+    <form class="comment-form" id="comment-form">
+        <input
+            id="comment-author"
+            type="text"
+            maxlength="40"
+            placeholder="Ваше имя"
+            required
+        >
+
+        <textarea
+            id="comment-text"
+            maxlength="1000"
+            placeholder="Напишите комментарий..."
+            required
+        ></textarea>
+
+        <button class="comment-submit" type="submit">
+            Оставить комментарий
+        </button>
+    </form>
+
+    <div class="comment-list" id="comment-list"></div>
+</section>
 </section>
 </main>
 
@@ -427,6 +546,7 @@ function openProduct(id) {
     if (!product) return;
 
     currentProductId = product.id;
+    renderComments();
     document.getElementById("detail-image").src = product.image;
     document.getElementById("detail-image").alt = product.name;
     document.getElementById("detail-category").textContent = product.category;
@@ -634,6 +754,88 @@ document.getElementById("checkout").addEventListener("click", () => {
 /* INITIALIZE */
 renderProducts();
 renderCart();
+// ID выбранного товара
+
+// Получение комментариев конкретного товара
+function getProductComments(id) {
+    try {
+        return JSON.parse(
+            localStorage.getItem("soundwave-comments-" + id) || "[]"
+        );
+    } catch (error) {
+        return [];
+    }
+}
+
+// Отображение комментариев
+function renderComments() {
+    const list = document.getElementById("comment-list");
+    list.innerHTML = "";
+
+    const comments = getProductComments(currentProductId);
+
+    if (comments.length === 0) {
+        list.innerHTML =
+            '<p class="comment-empty">Пока нет комментариев. Будьте первым!</p>';
+        return;
+    }
+
+    comments.slice().reverse().forEach(comment => {
+        const card = document.createElement("article");
+        card.className = "comment-card";
+
+        const author = document.createElement("strong");
+        author.textContent = comment.author;
+
+        const message = document.createElement("p");
+        message.textContent = comment.text;
+
+        const date = document.createElement("div");
+        date.className = "comment-date";
+        date.textContent = comment.date;
+
+        card.append(author, message, date);
+        list.appendChild(card);
+    });
+}
+
+// Добавление комментария
+document.getElementById("comment-form").addEventListener("submit", event => {
+    event.preventDefault();
+
+    if (currentProductId === null) return;
+
+    const author = document
+        .getElementById("comment-author")
+        .value.trim();
+
+    const message = document
+        .getElementById("comment-text")
+        .value.trim();
+
+    if (!author || !message) return;
+
+    const comments = getProductComments(currentProductId);
+
+    comments.push({
+        author: author,
+        text: message,
+        date: new Date().toLocaleString("ru-RU")
+    });
+
+    try {
+        localStorage.setItem(
+            "soundwave-comments-" + currentProductId,
+            JSON.stringify(comments)
+        );
+    } catch (error) {
+        alert("Не удалось сохранить комментарий.");
+        return;
+    }
+
+    document.getElementById("comment-form").reset();
+    renderComments();
+});
 </script>
 </body>
 </html>
